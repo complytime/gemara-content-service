@@ -17,6 +17,9 @@ coverage.*
 *.coverprofile
 profile.cov
 
+# Build output
+bin/
+
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
@@ -27,6 +30,16 @@ go.work.sum
 # env file
 .env
 
+# Generated TLS certs (keep openssl.cnf)
+hack/self-signed-cert/*.key
+hack/self-signed-cert/*.crt
+hack/self-signed-cert/*.csr
+hack/self-signed-cert/*.srl
+
 # Editor/IDE
 # .idea/
 # .vscode/
+*.code-workspace
+
+# Speckit
+.specify/

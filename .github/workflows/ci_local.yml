@@ -1,0 +1,81 @@
+name: Local CI
+on:
+  push:
+    branches:
+      - 'main'
+  pull_request:
+    branches:
+      - 'main'
+
+permissions:
+  contents: none
+  issues: none
+  pull-requests: none
+  actions: none
+  security-events: none
+
+env:
+  GO_VERSION: 1.24
+  GOLANGCI_LINT_VERSION: v2.1
+
+jobs:
+  golangci-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version: "${{ env.GO_VERSION }}"
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9.2.0
+        with:
+          version: "${{ env.GOLANGCI_LINT_VERSION }}"
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version: "${{ env.GO_VERSION }}"
+
+      - name: Run all tests
+        run: make test
+
+      - name: Build binary
+        run: make build
+
+  verify-codegen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version: "${{ env.GO_VERSION }}"
+
+      - name: Install oapi-codegen
+        run: go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest
+
+      - name: Add Go bin to PATH
+        run: echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Install dependencies
+        run: go mod download
+
+      - name: Run code generation
+        run: make api-codegen
+
+      - name: Check for diffs
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "ERROR: Code generation produced diffs. Please run 'make api-codegen' and commit the changes."
+            echo ""
+            echo "Changes detected:"
+            git status --porcelain
+            echo ""
+            echo "Diff:"
+            git diff
+            exit 1
+          else
+            echo "SUCCESS: No diffs detected. Code generation is up to date."
+          fi

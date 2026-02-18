@@ -1,0 +1,42 @@
+# Multi-stage build for Gemara Content Service
+# Stage 1: Extract CA certificates from Alpine
+# Stage 2: Build the binary using Go
+# Stage 3: Create minimal runtime image with distroless base
+
+# Stage 1: Certificate extraction
+FROM alpine:3.22 AS certs
+RUN apk --update add ca-certificates
+
+# Stage 2: Build the service
+FROM golang:1.24.5 AS build-stage
+WORKDIR /build
+
+# Copy dependency files first for better layer caching
+COPY go.mod go.sum ./
+RUN --mount=type=cache,target=/root/.cache/go-build go mod download
+
+# Copy source code
+COPY . .
+
+# Build the binary with build cache optimization
+RUN --mount=type=cache,target=/root/.cache/go-build CGO_ENABLED=0 go build -o compass ./cmd/compass
+
+# Stage 3: Runtime image
+FROM gcr.io/distroless/base:latest
+
+LABEL org.opencontainers.image.title="Gemara Content Service" \
+      org.opencontainers.image.description="OCI-compliant registry and enrichment service for Gemara compliance content" \
+      org.opencontainers.image.vendor="ComplyTime" \
+      org.opencontainers.image.source="https://github.com/complytime/gemara-content-service" \
+      org.opencontainers.image.licenses="Apache-2.0"
+
+ARG USER_UID=10001
+USER ${USER_UID}
+
+COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --chmod=755 --from=build-stage /build/compass /compass
+
+ENTRYPOINT ["/compass"]
+CMD ["--port", "8081"]
+
+EXPOSE 8081

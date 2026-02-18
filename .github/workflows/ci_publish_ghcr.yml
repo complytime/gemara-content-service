@@ -1,0 +1,152 @@
+# Publish Images Production Workflow
+# ==================================
+# Multi-stage security pipeline for building, scanning, and publishing container images.
+#
+# Pipeline Flow:
+#   scan-source → build-compass → scan-image-compass → sign-compass
+#
+# NOTE: Scorecard flags 'write' permissions but these are REQUIRED for image publishing
+# See: https://docs.github.com/en/actions/sharing-automations/reusing-workflows
+
+name: Publish Images to GHCR
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '**/Containerfile*'
+      - '.github/workflows/**'
+  schedule:
+    - cron: '0 0 */30 * *'
+  workflow_dispatch:
+    inputs:
+      force_rebuild:
+        description: 'Force rebuild without cache'
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: none
+  packages: none
+  id-token: none
+  attestations: none
+  security-events: none
+  actions: none
+
+concurrency:
+  group: publish-images-ghcr-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  scan-source:
+    name: Pre-build Source Scan
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
+      id-token: write
+      actions: read
+    uses: complytime/org-infra/.github/workflows/reusable_vuln_scan.yml@main
+    with:
+      enable_osv: true
+      enable_trivy_source: true
+      enable_trivy_image: false
+      trivy_severity: HIGH,CRITICAL
+    secrets: inherit
+
+  build-compass:
+    name: Build Compass Image
+    needs: [scan-source]
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      actions: read
+      attestations: write
+    uses: complytime/org-infra/.github/workflows/reusable_push_ghcr.yml@main
+    with:
+      component_name: compass
+      containerfile_path: images/Containerfile.compass
+      context_path: .
+      image_name: complytime/gemara-content-service
+      image_description: Gemara Content Service
+      image_vendor: ComplyTime
+      force_rebuild: ${{ inputs.force_rebuild || false }}
+    secrets: inherit
+
+  scan-image-compass:
+    name: Scan Compass Image
+    needs: [build-compass]
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
+      id-token: write
+      actions: read
+    uses: complytime/org-infra/.github/workflows/reusable_vuln_scan.yml@main
+    with:
+      enable_osv: false
+      enable_trivy_source: false
+      enable_trivy_image: true
+      image_ref: ${{ needs.build-compass.outputs.image }}:sha-${{ github.sha }}
+      image_digest: ${{ needs.build-compass.outputs.digest }}
+      trivy_severity: HIGH,CRITICAL
+    secrets: inherit
+
+  sign-compass:
+    name: Sign Compass Image
+    needs: [build-compass, scan-image-compass]
+    permissions:
+      packages: write
+      id-token: write
+    uses: complytime/org-infra/.github/workflows/reusable_sign_and_verify.yml@main
+    with:
+      image_name: ${{ needs.build-compass.outputs.image }}
+      digest: ${{ needs.build-compass.outputs.digest }}
+      allowed_identity_regex: https://github.com/complytime/org-infra(/.*)?
+    secrets: inherit
+
+  summary:
+    name: Pipeline Summary
+    needs: [scan-source, build-compass, scan-image-compass, sign-compass]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Generate Summary
+        env:
+          R_SRC: ${{ needs.scan-source.result }}
+          R_B1: ${{ needs.build-compass.result }}
+          R_S1: ${{ needs.scan-image-compass.result }}
+          R_G1: ${{ needs.sign-compass.result }}
+        run: |
+          icon() { case "$1" in success) echo "✅";; skipped) echo "⏭️";; *) echo "❌";; esac; }
+
+          cat >> "$GITHUB_STEP_SUMMARY" << EOF
+          ## Image Pipeline Summary
+
+          | Stage | Status |
+          |-------|--------|
+          | Source Scan | $(icon "$R_SRC") |
+          | Build | $(icon "$R_B1") |
+          | Image Scan | $(icon "$R_S1") |
+          | Sign | $(icon "$R_G1") |
+          EOF
+          if [[ "$R_B1" != "success" && "$R_B1" != "skipped" ]]; then
+            echo "**Build failed.**" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          cat >> "$GITHUB_STEP_SUMMARY" << EOF
+
+          **Pipeline completed successfully.**
+
+          ### Security Checks Passed
+          - Secret scanning
+          - Vulnerability scanning
+          - SBOM generated
+          - Provenance attestation
+          - Image signed and verified
+          EOF

@@ -1,0 +1,192 @@
+# Assisted by: Gemini 2.5 Pro
+openapi: 3.0.3
+info:
+  title: Compass Service API
+  version: 0.1.0
+  description: |
+    A centralized compliance metadata server that provides policy-to-compliance mappings,
+    control frameworks, and risk assessments for policy-as-code workflows. This service serves as
+    the authoritative source for compliance metadata, enabling OpenTelemetry collectors and other
+    systems to enrich policy evaluation events with standardized compliance context,
+    regulatory mappings, and risk classifications.
+
+paths:
+  /v1/enrich:
+    post:
+      summary: Enrich telemetry attributes with compliance control data
+      description: |
+        Accepts a set of key telemetry attributes (e.g., asset ID, policy name, user ID) and
+        returns additional compliance-related attributes based on internal domain logic.
+        This endpoint is intended to be called by an OpenTelemetry Collector's custom processor.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnrichmentRequest'
+      responses:
+        '200':
+          description: Successfully enriched attributes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnrichmentResponse'
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    EnrichmentRequest:
+      type: object
+      description: Request payload for telemetry attribute enrichment
+      properties:
+        policy:
+          $ref: '#/components/schemas/Policy'
+      required:
+        - policy
+
+    EnrichmentResponse:
+      type: object
+      description: "Complete compliance metadata including control mappings, frameworks, risk assessment."
+      properties:
+        compliance:
+          $ref: '#/components/schemas/Compliance'
+      required:
+        - compliance
+      example:
+        compliance:
+          control:
+            id: "OSPS-QA-07.01"
+            category: "Access Control"
+            catalogId: "OSPS-B"
+            applicability: ["Production", "Staging"]
+            remediationDescription: "Remove root user access and implement proper IAM policies"
+          frameworks:
+            frameworks: ["NIST-800-53", "SOC-2"]
+            requirements: ["AC-1", "CC6.1"]
+          risk:
+            level: "High"
+          enrichmentStatus: "Success"
+
+    Policy:
+      type: object
+      description: "Complete evidence log from policy engines and compliance assessment tools"
+      properties:
+        policyEngineName:
+          type: string
+          description: Name of the policy engine that performed the evaluation or enforcement action
+          example: "OPA"
+        policyRuleId:
+          type: string
+          description: Unique identifier for the policy rule being evaluated or enforced
+          example: "deny-root-user"
+      required:
+        - policyEngineName
+        - policyRuleId
+
+    Compliance:
+      type: object
+      title: "Compliance"
+      description: "Compliance details from OCSF Security Control Profile."
+      properties:
+        control:
+          $ref: '#/components/schemas/ComplianceControl'
+        frameworks:
+          $ref: '#/components/schemas/ComplianceFrameworks'
+        risk:
+          $ref: '#/components/schemas/ComplianceRisk'
+        enrichmentStatus:
+          type: string
+          description: "Status of the compliance enrichment process: Success, Unmapped, Partial, Unknown, or Skipped."
+          enum: ["Success", "Unmapped", "Partial", "Unknown", "Skipped"]
+          example: "Success"
+      additionalProperties: false
+      required:
+        - control
+        - frameworks
+        - enrichmentStatus
+
+    # Compliance Control Schema
+    ComplianceControl:
+      type: object
+      description: "Security control information for compliance assessment"
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the security control being assessed
+          example: "OSPS-QA-07.01"
+        category:
+          type: string
+          description: Category or family that the security control belongs to
+          example: "Access Control"
+        catalogId:
+          type: string
+          description: Unique identifier for the security control catalog or framework
+          example: "OSPS-B"
+        applicability:
+          type: array
+          items:
+            type: string
+          description: Environments or contexts where this control applies
+          example: ["Production", "Staging"]
+        remediationDescription:
+          type: string
+          description: Description of the recommended remediation strategy for this control
+          example: "Remove root user access and implement proper IAM policies"
+      required:
+        - id
+        - catalogId
+        - category
+
+    # Compliance Frameworks Schema
+    ComplianceFrameworks:
+      type: object
+      description: "Compliance framework and requirement information"
+      properties:
+        frameworks:
+          type: array
+          items:
+            type: string
+          description: Regulatory or industry standards being evaluated for compliance
+          example: ["NIST-800-53", "SOC-2"]
+        requirements:
+          type: array
+          items:
+            type: string
+          description: Compliance requirement identifiers from the frameworks being evaluated
+          example: ["AC-1", "CC6.1"]
+      required:
+        - frameworks
+        - requirements
+
+    # Compliance Risk Schema
+    ComplianceRisk:
+      type: object
+      description: "Compliance risk assessment information"
+      properties:
+        level:
+          type: string
+          enum: ["Critical", "High", "Medium", "Low", "Informational"]
+          description: Risk level associated with non-compliance
+          example: "High"
+      required:
+        - level
+
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          format: int32
+          description: HTTP status code
+          example: 400
+        message:
+          type: string
+          description: Error message
