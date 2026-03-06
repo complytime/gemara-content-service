@@ -21,12 +21,26 @@ const (
 	Medium        ComplianceRiskLevel = "Medium"
 )
 
+// Defines values for OCIErrorCode.
+const (
+	BLOBUNKNOWN     OCIErrorCode = "BLOB_UNKNOWN"
+	MANIFESTUNKNOWN OCIErrorCode = "MANIFEST_UNKNOWN"
+	NAMEUNKNOWN     OCIErrorCode = "NAME_UNKNOWN"
+)
+
+// Defines values for OCILayerDescriptorMediaType.
+const (
+	ApplicationvndGemaraCatalogV1Yaml  OCILayerDescriptorMediaType = "application/vnd.gemara.catalog.v1+yaml"
+	ApplicationvndGemaraGuidanceV1Yaml OCILayerDescriptorMediaType = "application/vnd.gemara.guidance.v1+yaml"
+	ApplicationvndGemaraPolicyV1Yaml   OCILayerDescriptorMediaType = "application/vnd.gemara.policy.v1+yaml"
+)
+
 // Compliance Compliance details from OCSF Security Control Profile.
 type Compliance struct {
 	// Control Security control information for compliance assessment
 	Control ComplianceControl `json:"control"`
 
-	// EnrichmentStatus Status of the compliance enrichment process: Success, Unmapped, Partial, Unknown, or Skipped.
+	// EnrichmentStatus Status of the compliance enrichment process
 	EnrichmentStatus ComplianceEnrichmentStatus `json:"enrichmentStatus"`
 
 	// Frameworks Compliance framework and requirement information
@@ -36,7 +50,7 @@ type Compliance struct {
 	Risk *ComplianceRisk `json:"risk,omitempty"`
 }
 
-// ComplianceEnrichmentStatus Status of the compliance enrichment process: Success, Unmapped, Partial, Unknown, or Skipped.
+// ComplianceEnrichmentStatus Status of the compliance enrichment process
 type ComplianceEnrichmentStatus string
 
 // ComplianceControl Security control information for compliance assessment
@@ -94,6 +108,73 @@ type Error struct {
 
 	// Message Error message
 	Message string `json:"message"`
+}
+
+// OCIDescriptor An OCI content descriptor (used for config blobs).
+type OCIDescriptor struct {
+	// Digest Content-addressable digest (e.g. sha256:...).
+	Digest string `json:"digest"`
+
+	// MediaType Media type of the referenced content.
+	MediaType string `json:"mediaType"`
+
+	// Size Size of the content in bytes.
+	Size int64 `json:"size"`
+}
+
+// OCIError A single OCI error entry.
+type OCIError struct {
+	// Code OCI error code. One of: NAME_UNKNOWN, MANIFEST_UNKNOWN,
+	// BLOB_UNKNOWN.
+	Code OCIErrorCode `json:"code"`
+
+	// Detail Optional additional error context.
+	Detail interface{} `json:"detail,omitempty"`
+
+	// Message Human-readable error message.
+	Message string `json:"message"`
+}
+
+// OCIErrorCode OCI error code. One of: NAME_UNKNOWN, MANIFEST_UNKNOWN,
+// BLOB_UNKNOWN.
+type OCIErrorCode string
+
+// OCIErrors OCI Distribution Spec error response.
+type OCIErrors struct {
+	Errors []OCIError `json:"errors"`
+}
+
+// OCILayerDescriptor An OCI layer descriptor for Gemara content. The mediaType field
+// identifies the Gemara layer type of the referenced YAML file.
+type OCILayerDescriptor struct {
+	// Digest Content-addressable digest (e.g. sha256:...).
+	Digest string `json:"digest"`
+
+	// MediaType The Gemara content type of this layer. Identifies which Gemara
+	// layer the YAML content belongs to.
+	MediaType OCILayerDescriptorMediaType `json:"mediaType"`
+
+	// Size Size of the content in bytes.
+	Size int64 `json:"size"`
+}
+
+// OCILayerDescriptorMediaType The Gemara content type of this layer. Identifies which Gemara
+// layer the YAML content belongs to.
+type OCILayerDescriptorMediaType string
+
+// OCIManifest An OCI image manifest describing layers of Gemara compliance content.
+type OCIManifest struct {
+	// Config An OCI content descriptor (used for config blobs).
+	Config OCIDescriptor `json:"config"`
+
+	// Layers Ordered list of layer descriptors. Each layer contains one Gemara YAML file.
+	Layers []OCILayerDescriptor `json:"layers"`
+
+	// MediaType The manifest media type.
+	MediaType string `json:"mediaType"`
+
+	// SchemaVersion Must be 2 for OCI image manifests.
+	SchemaVersion int `json:"schemaVersion"`
 }
 
 // Policy Complete evidence log from policy engines and compliance assessment tools

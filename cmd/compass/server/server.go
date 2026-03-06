@@ -14,10 +14,11 @@ import (
 
 	"github.com/complytime/gemara-content-service/api"
 	httpmw "github.com/complytime/gemara-content-service/internal/middleware"
+	"github.com/complytime/gemara-content-service/internal/oci"
 	compass "github.com/complytime/gemara-content-service/service"
 )
 
-func NewGinServer(service *compass.Service, port string) *http.Server {
+func NewGinServer(service *compass.Service, registry *oci.Registry, port string) *http.Server {
 	swagger, err := api.GetSwagger()
 	if err != nil {
 		slog.Error("Error loading swagger spec", "err", err)
@@ -32,9 +33,17 @@ func NewGinServer(service *compass.Service, port string) *http.Server {
 	r.Use(gin.Recovery())
 	r.Use(requestid.New(), httpmw.AccessLogger())
 
-	r.Use(middleware.OapiRequestValidator(swagger))
+	// OCI Distribution routes are registered directly on the router without
+	// OpenAPI validation. The catch-all path parameter used for repository
+	// names containing slashes cannot be validated by the OpenAPI spec.
+	if registry != nil {
+		oci.RegisterRoutes(r, registry)
+	}
 
-	api.RegisterHandlers(r, service)
+	// Enrichment routes use OpenAPI request validation.
+	enrichGroup := r.Group("")
+	enrichGroup.Use(middleware.OapiRequestValidator(swagger))
+	api.RegisterHandlers(enrichGroup, service)
 
 	s := &http.Server{
 		Handler:           r,
