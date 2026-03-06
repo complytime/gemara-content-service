@@ -1,7 +1,0 @@
-plugins:
-  - id: conforma
-    evaluations-dir: "./hack/sampledata/evaluations"
-
-certConfig:
-  cert: /certs/compass.crt
-  key: /certs/compass.key
