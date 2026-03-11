@@ -40,7 +40,7 @@ func NewGinServer(service *compass.Service, registry *oci.Registry, port string,
 		expectedAudience := config.JWTAuth.ExpectedAudience
 		if envAudience := os.Getenv("EXPECTED_AUDIENCE"); envAudience != "" {
 			expectedAudience = envAudience
-			slog.Info("using expected audience from environment", "audience", expectedAudience)
+			slog.Info("using expected audience from environment", "audience", expectedAudience) //nolint:gosec // G706 - structured slog attributes prevent log injection
 		}
 
 		jwtConfig := httpmw.JWTAuthConfig{
@@ -57,7 +57,7 @@ func NewGinServer(service *compass.Service, registry *oci.Registry, port string,
 		}
 
 		r.Use(jwtAuth.Middleware())
-		slog.Info("jwt authentication enabled", "audience", expectedAudience)
+		slog.Info("jwt authentication enabled", "audience", expectedAudience) //nolint:gosec // G706 - structured slog attributes prevent log injection
 	}
 
 	// OCI Distribution routes are registered directly on the router without
@@ -86,15 +86,15 @@ func SetupTLS(server *http.Server, config Config) (string, string) {
 	tlsConfig := &tls.Config{MinVersion: tls.VersionTLS13}
 	server.TLSConfig = tlsConfig
 
-	if config.Certificate.PublicKey == "" {
+	if config.Certificate.CertPath == "" {
 		slog.Error("Invalid certification configuration. Please add certConfig.cert to the configuration.")
 		os.Exit(1)
 	}
 
-	if config.Certificate.PrivateKey == "" {
+	if config.Certificate.KeyPath == "" {
 		slog.Error("Invalid certification configuration. Please add certConfig.key to the configuration.")
 		os.Exit(1)
 	}
 
-	return config.Certificate.PublicKey, config.Certificate.PrivateKey
+	return config.Certificate.CertPath, config.Certificate.KeyPath
 }
