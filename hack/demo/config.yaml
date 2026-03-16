@@ -3,8 +3,8 @@ plugins:
     evaluations-dir: "./hack/sampledata/evaluations"
 
 certConfig:
-  cert: /certs/compass.crt
-  key: /certs/compass.key
+  cert: /certs/gemara-content-service.crt
+  key: /certs/gemara-content-service.key
 
 # Add this block to control JWT
 jwtAuth:

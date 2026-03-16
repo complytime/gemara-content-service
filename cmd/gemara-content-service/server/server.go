@@ -16,10 +16,10 @@ import (
 	"github.com/complytime/gemara-content-service/api"
 	httpmw "github.com/complytime/gemara-content-service/internal/middleware"
 	"github.com/complytime/gemara-content-service/internal/oci"
-	compass "github.com/complytime/gemara-content-service/service"
+	gcservice "github.com/complytime/gemara-content-service/service"
 )
 
-func NewGinServer(service *compass.Service, registry *oci.Registry, port string, config *Config) *http.Server {
+func NewGinServer(service *gcservice.Service, registry *oci.Registry, port string, config *Config) *http.Server {
 	swagger, err := api.GetSwagger()
 	if err != nil {
 		slog.Error("Error loading swagger spec", "err", err)

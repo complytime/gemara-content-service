@@ -19,7 +19,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build go mod download
 COPY . .
 
 # Build the binary with build cache optimization
-RUN --mount=type=cache,target=/root/.cache/go-build CGO_ENABLED=0 go build -o compass ./cmd/compass
+RUN --mount=type=cache,target=/root/.cache/go-build CGO_ENABLED=0 go build -o gemara-content-service ./cmd/gemara-content-service
 
 # Stage 3: Runtime image
 FROM gcr.io/distroless/base:nonroot
@@ -34,9 +34,9 @@ ARG USER_UID=10001
 USER ${USER_UID}
 
 COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
-COPY --chmod=755 --from=build-stage /build/compass /compass
+COPY --chmod=755 --from=build-stage /build/gemara-content-service /gemara-content-service
 
-ENTRYPOINT ["/compass"]
+ENTRYPOINT ["/gemara-content-service"]
 CMD ["--port", "8081"]
 
 EXPOSE 8081

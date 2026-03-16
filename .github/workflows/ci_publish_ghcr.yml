@@ -3,7 +3,7 @@
 # Multi-stage security pipeline for building, scanning, and publishing container images.
 #
 # Pipeline Flow:
-#   scan-source → build-compass → scan-image-compass → sign-compass
+#   scan-source → build-gcs → scan-image-gcs → sign-gcs
 #
 # NOTE: Scorecard flags 'write' permissions but these are REQUIRED for image publishing
 # See: https://docs.github.com/en/actions/sharing-automations/reusing-workflows
@@ -56,8 +56,8 @@ jobs:
       trivy_severity: HIGH,CRITICAL
     secrets: inherit
 
-  build-compass:
-    name: Build Compass Image
+  build-gcs:
+    name: Build Gemara Content Service Image
     needs: [scan-source]
     permissions:
       contents: read
@@ -67,8 +67,8 @@ jobs:
       attestations: write
     uses: complytime/org-infra/.github/workflows/reusable_publish_ghcr.yml@main
     with:
-      component_name: compass
-      containerfile_path: images/Containerfile.compass
+      component_name: gemara-content-service
+      containerfile_path: images/Containerfile.gemara-content-service
       context_path: .
       image_name: complytime/gemara-content-service
       image_description: Gemara Content Service
@@ -76,9 +76,9 @@ jobs:
       force_rebuild: ${{ inputs.force_rebuild || false }}
     secrets: inherit
 
-  scan-image-compass:
-    name: Scan Compass Image
-    needs: [build-compass]
+  scan-image-gcs:
+    name: Scan Gemara Content Service Image
+    needs: [build-gcs]
     permissions:
       contents: read
       packages: write
@@ -90,27 +90,27 @@ jobs:
       enable_osv: false
       enable_trivy_source: false
       enable_trivy_image: true
-      image_ref: ${{ needs.build-compass.outputs.image }}:sha-${{ github.sha }}
-      image_digest: ${{ needs.build-compass.outputs.digest }}
+      image_ref: ${{ needs.build-gcs.outputs.image }}:sha-${{ github.sha }}
+      image_digest: ${{ needs.build-gcs.outputs.digest }}
       trivy_severity: HIGH,CRITICAL
     secrets: inherit
 
-  sign-compass:
-    name: Sign Compass Image
-    needs: [build-compass, scan-image-compass]
+  sign-gcs:
+    name: Sign Gemara Content Service Image
+    needs: [build-gcs, scan-image-gcs]
     permissions:
       packages: write
       id-token: write
     uses: complytime/org-infra/.github/workflows/reusable_sign_and_verify.yml@main
     with:
-      image_name: ${{ needs.build-compass.outputs.image }}
-      digest: ${{ needs.build-compass.outputs.digest }}
+      image_name: ${{ needs.build-gcs.outputs.image }}
+      digest: ${{ needs.build-gcs.outputs.digest }}
       allowed_identity_regex: https://github.com/complytime/org-infra(/.*)?
     secrets: inherit
 
   summary:
     name: Pipeline Summary
-    needs: [scan-source, build-compass, scan-image-compass, sign-compass]
+    needs: [scan-source, build-gcs, scan-image-gcs, sign-gcs]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     permissions:
@@ -119,9 +119,9 @@ jobs:
       - name: Generate Summary
         env:
           R_SRC: ${{ needs.scan-source.result }}
-          R_B1: ${{ needs.build-compass.result }}
-          R_S1: ${{ needs.scan-image-compass.result }}
-          R_G1: ${{ needs.sign-compass.result }}
+          R_B1: ${{ needs.build-gcs.result }}
+          R_S1: ${{ needs.scan-image-gcs.result }}
+          R_G1: ${{ needs.sign-gcs.result }}
         run: |
           icon() { case "$1" in success) echo "✅";; skipped) echo "⏭️";; *) echo "❌";; esac; }
 

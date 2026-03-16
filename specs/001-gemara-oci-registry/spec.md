@@ -235,7 +235,7 @@ client side.
 - The OCI manifest **config** descriptor will use a minimal empty config blob
   (or `application/vnd.oci.empty.v1+json`); no Gemara-specific config metadata
   is needed in this phase.
-- The OCI routes will be served by the **existing Compass Gin server** (same
+- The OCI routes will be served by the **existing Gin server** (same
   binary, same port), alongside the existing `POST /v1/enrich` endpoint.
 - The OpenAPI spec file `api.yaml` defines both OCI and enrichment endpoints;
   the implementation will align with those definitions.

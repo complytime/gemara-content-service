@@ -2,7 +2,7 @@
 
 ## Overview
 
-Compass uses a Gin middleware for JWT authentication that validates Kubernetes bound service account tokens. The implementation uses the industry-standard `coreos/go-oidc` library with `k8s.io/client-go` for OIDC-compliant token verification.
+Gemara Content Service uses a Gin middleware for JWT authentication that validates Kubernetes bound service account tokens. The implementation uses the industry-standard `coreos/go-oidc` library with `k8s.io/client-go` for OIDC-compliant token verification.
 
 ## How It Works
 
@@ -76,7 +76,7 @@ The middleware performs the following security validations:
 
 ```go
 middleware := JWTAuthMiddleware(JWTAuthConfig{
-    ExpectedAudience: "compass-internal",
+    ExpectedAudience: "gemara-content-service",
 })
 ```
 
@@ -84,7 +84,7 @@ middleware := JWTAuthMiddleware(JWTAuthConfig{
 
 ```go
 middleware := JWTAuthMiddleware(JWTAuthConfig{
-    ExpectedAudience: "compass-internal",
+    ExpectedAudience: "gemara-content-service",
     AllowedSubjects: []string{
         "system:serviceaccount:default:collector",
     },
@@ -129,7 +129,7 @@ spec:
       - serviceAccountToken:
           path: token
           expirationSeconds: 3600
-          audience: compass-internal  # Must match ExpectedAudience
+          audience: gemara-content-service  # Must match ExpectedAudience
 ```
 
 Client code:

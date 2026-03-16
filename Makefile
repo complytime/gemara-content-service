@@ -11,7 +11,7 @@
 # ==============================================================================
 
 BIN_DIR := bin
-BINARY := compass
+BINARY := gemara-content-service
 
 all: test build
 
@@ -38,7 +38,7 @@ coverage-report: test ## Generate HTML coverage report and show summary
 # ------------------------------------------------------------------------------
 build: ## Builds the binary and places it in the $(BIN_DIR) directory
 	@mkdir -p $(BIN_DIR)
-	go build -v -o $(BIN_DIR)/$(BINARY) ./cmd/compass/
+	go build -v -o $(BIN_DIR)/$(BINARY) ./cmd/gemara-content-service/
 	@echo "--- Binary built: $(BIN_DIR)/$(BINARY) ---"
 .PHONY: build
 

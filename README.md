@@ -22,13 +22,13 @@ make build
 ### Run locally (no TLS)
 
 ```bash
-./bin/compass --skip-tls --port 9090
+./bin/gemara-content-service --skip-tls --port 9090
 ```
 
 ### Build container image locally
 
 ```shell
-podman build -f images/Containerfile.compass -t gemara-content-service:local .
+podman build -f images/Containerfile.gemara-content-service -t gemara-content-service:local .
 ```
 
 
@@ -45,7 +45,7 @@ Refer to [this](https://github.com/complytime/complytime-collector-components/bl
 ## Project Structure
 
 ```
-cmd/compass/          Main entry point and server wiring
+cmd/gemara-content-service/   Main entry point and server wiring
 api/                  OpenAPI-generated types and server interface
 internal/             Internal packages (logging, middleware)
 mapper/               Enrichment plugin framework

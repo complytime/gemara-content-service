@@ -36,7 +36,7 @@ func (s *Service) PostV1Enrich(c *gin.Context) {
 			slog.String("request_id", requestid.Get(c)),
 			slog.String("error", err.Error()),
 		)
-		sendCompassError(c, http.StatusBadRequest, "Invalid format for enrichment")
+		sendError(c, http.StatusBadRequest, "Invalid format for enrichment")
 		return
 	}
 
@@ -77,12 +77,9 @@ func (s *Service) PostV1Enrich(c *gin.Context) {
 	c.JSON(http.StatusOK, enrichedResponse)
 }
 
-// sendCompassError wraps sending of an error in the Error format, and
-// handling the failure to marshal that.
-func sendCompassError(c *gin.Context, code int32, message string) {
-	compassErr := api.Error{
+func sendError(c *gin.Context, code int32, message string) {
+	c.JSON(int(code), api.Error{
 		Code:    code,
 		Message: message,
-	}
-	c.JSON(int(code), compassErr)
+	})
 }

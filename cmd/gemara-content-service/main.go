@@ -9,10 +9,10 @@ import (
 	"github.com/goccy/go-yaml"
 	bolt "go.etcd.io/bbolt"
 
-	"github.com/complytime/gemara-content-service/cmd/compass/server"
+	"github.com/complytime/gemara-content-service/cmd/gemara-content-service/server"
 	"github.com/complytime/gemara-content-service/internal/logging"
 	"github.com/complytime/gemara-content-service/internal/oci"
-	compass "github.com/complytime/gemara-content-service/service"
+	gcservice "github.com/complytime/gemara-content-service/service"
 )
 
 func main() {
@@ -31,7 +31,7 @@ func main() {
 
 	// TODO: This needs to become Layer 3 policy and complete resolution on startup
 	flag.StringVar(&catalogPath, "catalog", "./hack/sampledata/osps.yaml", "Path to Layer 2 catalog")
-	flag.StringVar(&configPath, "config", "./hack/demo/config.yaml", "Path to compass config file")
+	flag.StringVar(&configPath, "config", "./hack/demo/config.yaml", "Path to gemara-content-service config file")
 	flag.Parse()
 
 	_, err := logging.Init(logLevel)
@@ -40,7 +40,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	slog.Info("starting compass service",
+	slog.Info("starting gemara-content-service",
 		slog.String("port", port),
 		slog.String("catalog", catalogPath),
 		slog.String("config", configPath),
@@ -75,7 +75,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	service := compass.NewService(transformers, scope)
+	service := gcservice.NewService(transformers, scope)
 
 	// Initialize the OCI registry if a storage root is configured.
 	var registry *oci.Registry

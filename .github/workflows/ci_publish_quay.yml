@@ -75,8 +75,8 @@ jobs:
           echo "$TOKEN" | crane auth login ghcr.io -u "$GH_ACTOR" --password-stdin
           crane tag "ghcr.io/complytime/gemara-content-service:${SOURCE_TAG}" "$DEST_TAG"
 
-  promote-compass:
-    name: Promote Compass
+  promote-gcs:
+    name: Promote Gemara Content Service
     needs: [setup, tag-ghcr]
     permissions:
       packages: read
