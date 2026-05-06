@@ -48,7 +48,7 @@ jobs:
       security-events: write
       id-token: write
       actions: read
-    uses: complytime/org-infra/.github/workflows/reusable_vuln_scan.yml@main
+    uses: complytime/org-infra/.github/workflows/reusable_vuln_scan.yml@393ab96ded06d41472526fb46ebe7a7188c422d3 # v0.2.0
     with:
       enable_osv: true
       enable_trivy_source: true
@@ -65,7 +65,7 @@ jobs:
       id-token: write
       actions: read
       attestations: write
-    uses: complytime/org-infra/.github/workflows/reusable_publish_ghcr.yml@main
+    uses: complytime/org-infra/.github/workflows/reusable_publish_ghcr.yml@393ab96ded06d41472526fb46ebe7a7188c422d3 # v0.2.0
     with:
       component_name: compass
       containerfile_path: images/Containerfile.compass
@@ -85,7 +85,7 @@ jobs:
       security-events: write
       id-token: write
       actions: read
-    uses: complytime/org-infra/.github/workflows/reusable_vuln_scan.yml@main
+    uses: complytime/org-infra/.github/workflows/reusable_vuln_scan.yml@393ab96ded06d41472526fb46ebe7a7188c422d3 # v0.2.0
     with:
       enable_osv: false
       enable_trivy_source: false
@@ -101,7 +101,7 @@ jobs:
     permissions:
       packages: write
       id-token: write
-    uses: complytime/org-infra/.github/workflows/reusable_sign_and_verify.yml@main
+    uses: complytime/org-infra/.github/workflows/reusable_sign_and_verify.yml@393ab96ded06d41472526fb46ebe7a7188c422d3 # v0.2.0
     with:
       image_name: ${{ needs.build-compass.outputs.image }}
       digest: ${{ needs.build-compass.outputs.digest }}
