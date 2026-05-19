@@ -213,6 +213,55 @@ func TestBlobPath_PathTraversal(t *testing.T) {
 	assert.ErrorIs(t, err, ErrBlobNotFound)
 }
 
+func TestBlobPath_ContainmentCheck(t *testing.T) {
+	// The containment check (registry.go:183) is defense-in-depth:
+	// it prevents path traversal even if parseDigest validation were
+	// loosened in the future. Under normal operation, parseDigest
+	// rejects non-hex characters, so ".." never reaches the path
+	// construction. This test exercises the containment check
+	// directly by temporarily adding a traversal algorithm to
+	// validAlgorithms, bypassing the parseDigest guard.
+	//
+	// A real blob file is placed at the escaped path so that,
+	// without the containment check, os.Stat would succeed and
+	// BlobPath would return the path. The containment check must
+	// reject it regardless.
+
+	dir := t.TempDir()
+	blobRoot := filepath.Join(dir, "blobs")
+	require.NoError(t, os.MkdirAll(blobRoot, 0755))
+
+	// Place a file outside blobRoot at the path BlobPath would
+	// resolve to after ".." traversal.
+	hexStr := "aabbccdd"
+	prefix := hexStr[:2]
+	escapedDir := filepath.Join(dir, "escaped", prefix)
+	require.NoError(t, os.MkdirAll(escapedDir, 0755))
+	require.NoError(t, os.WriteFile(
+		filepath.Join(escapedDir, hexStr), []byte("secret"), 0600,
+	))
+
+	db, err := bolt.Open(filepath.Join(dir, "test.db"), 0600, nil)
+	require.NoError(t, err)
+	t.Cleanup(func() { db.Close() })
+
+	reg := NewRegistry(db, blobRoot)
+
+	// Temporarily allow a traversal algorithm to bypass the
+	// parseDigest allowlist. This simulates a hypothetical
+	// regression where parseDigest permits ".." components.
+	validAlgorithms["../escaped"] = true
+	t.Cleanup(func() { delete(validAlgorithms, "../escaped") })
+
+	// Digest "../escaped:aabbccdd" constructs:
+	//   filepath.Join(blobRoot, "../escaped", "aa", "aabbccdd")
+	//   → dir/escaped/aa/aabbccdd  (outside blobRoot)
+	// The file exists, but the containment check must reject it.
+	_, err = reg.BlobPath("../escaped:" + hexStr)
+	assert.ErrorIs(t, err, ErrBlobNotFound,
+		"containment check must reject paths that escape blobRoot")
+}
+
 func TestBlobPath_InvalidAlgorithm(t *testing.T) {
 	reg := newTestRegistry(t, nil, nil, nil)
 
