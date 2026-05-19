@@ -212,3 +212,40 @@ func TestBlobPath_PathTraversal(t *testing.T) {
 	_, err := reg.BlobPath("sha256:../../../../../../etc/passwd")
 	assert.ErrorIs(t, err, ErrBlobNotFound)
 }
+
+func TestBlobPath_InvalidAlgorithm(t *testing.T) {
+	reg := newTestRegistry(t, nil, nil, nil)
+
+	// Crafted digest with path-traversal in algorithm component.
+	_, err := reg.BlobPath("../../etc:aabbccdd")
+	assert.ErrorIs(t, err, ErrBlobNotFound)
+}
+
+func TestBlobPath_UnknownAlgorithm(t *testing.T) {
+	reg := newTestRegistry(t, nil, nil, nil)
+
+	_, err := reg.BlobPath("md5:aabbccdd")
+	assert.ErrorIs(t, err, ErrBlobNotFound)
+}
+
+func TestParseDigest_AllowedAlgorithms(t *testing.T) {
+	for _, algo := range []string{"sha256", "sha384", "sha512"} {
+		algo, hexStr, ok := parseDigest(algo + ":aabbccdd")
+		assert.True(t, ok, "algorithm %q should be accepted", algo)
+		assert.NotEmpty(t, algo)
+		assert.Equal(t, "aabbccdd", hexStr)
+	}
+}
+
+func TestParseDigest_RejectedAlgorithms(t *testing.T) {
+	rejected := []string{
+		"md5:aabbccdd",
+		"SHA256:aabbccdd",
+		"../sha256:aabbccdd",
+		"../../etc:aabbccdd",
+	}
+	for _, input := range rejected {
+		_, _, ok := parseDigest(input)
+		assert.False(t, ok, "digest %q should be rejected", input)
+	}
+}

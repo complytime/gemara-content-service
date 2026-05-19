@@ -171,6 +171,19 @@ func (r *Registry) BlobPath(digest string) (string, error) {
 	prefix := hex[:2]
 	p := filepath.Join(r.blobRoot, algo, prefix, hex)
 
+	// Defense-in-depth: verify the resolved path stays within blobRoot.
+	absPath, err := filepath.Abs(p)
+	if err != nil {
+		return "", ErrBlobNotFound
+	}
+	absBlobRoot, err := filepath.Abs(r.blobRoot)
+	if err != nil {
+		return "", ErrBlobNotFound
+	}
+	if !strings.HasPrefix(absPath, absBlobRoot+string(filepath.Separator)) {
+		return "", ErrBlobNotFound
+	}
+
 	if _, err := os.Stat(p); err != nil {
 		if os.IsNotExist(err) {
 			return "", ErrBlobNotFound
@@ -181,12 +194,25 @@ func (r *Registry) BlobPath(digest string) (string, error) {
 	return p, nil
 }
 
+// validAlgorithms lists the digest algorithms accepted by the registry.
+// Only well-known OCI hash algorithms are allowed; this prevents path
+// traversal via a crafted algorithm component such as "../../etc".
+var validAlgorithms = map[string]bool{
+	"sha256": true,
+	"sha384": true,
+	"sha512": true,
+}
+
 // parseDigest splits a digest string like "sha256:abcdef..." into its
-// algorithm and hex components. Returns false if the format is invalid
-// or the hex portion contains non-hexadecimal characters.
+// algorithm and hex components. Returns false if the format is invalid,
+// the algorithm is not in the allowlist, or the hex portion contains
+// non-hexadecimal characters.
 func parseDigest(digest string) (algo, hexStr string, ok bool) {
 	parts := strings.SplitN(digest, ":", 2)
 	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return "", "", false
+	}
+	if !validAlgorithms[parts[0]] {
 		return "", "", false
 	}
 	if _, err := hex.DecodeString(parts[1]); err != nil {
