@@ -3,7 +3,7 @@ module github.com/complytime/gemara-content-service
 go 1.25.9
 
 require (
-	github.com/coreos/go-oidc/v3 v3.17.0
+	github.com/coreos/go-oidc/v3 v3.18.0
 	github.com/getkin/kin-openapi v0.133.0
 	github.com/gin-contrib/requestid v1.0.6
 	github.com/gin-gonic/gin v1.12.0
@@ -70,7 +70,7 @@ require (
 	golang.org/x/crypto v0.48.0 // indirect
 	golang.org/x/mod v0.33.0 // indirect
 	golang.org/x/net v0.51.0 // indirect
-	golang.org/x/oauth2 v0.30.0 // indirect
+	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect
 	golang.org/x/term v0.40.0 // indirect
