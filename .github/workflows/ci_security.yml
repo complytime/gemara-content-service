@@ -24,7 +24,7 @@ jobs:
       security-events: write  # Needed to upload the results to code-scanning dashboard.
       id-token: write         # Required for OIDC token generation (trivy_image job)
       packages: write         # Required for reusable workflow validation (trivy_image job)
-    uses: complytime/org-infra/.github/workflows/reusable_vuln_scan.yml@393ab96ded06d41472526fb46ebe7a7188c422d3 # v0.2.0
+    uses: complytime/org-infra/.github/workflows/reusable_vuln_scan.yml@cfd981e757253218aefb37c91969c32827e5c4b1 # v0.2.1
 
   call_reusable_security:
     name: OpenSSF Scorecards
