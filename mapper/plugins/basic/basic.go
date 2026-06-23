@@ -3,8 +3,7 @@ package basic
 import (
 	"log/slog"
 
-	"github.com/ossf/gemara/layer2"
-	"github.com/ossf/gemara/layer4"
+	gemara "github.com/gemaraproj/go-gemara"
 
 	"github.com/complytime/gemara-content-service/api"
 	"github.com/complytime/gemara-content-service/mapper"
@@ -19,7 +18,7 @@ type ProcedureInfo struct {
 
 // ControlData represents control information including mappings and category
 type ControlData struct {
-	Mappings []layer2.Mapping
+	Mappings []gemara.MultiEntryMapping
 	Category string
 }
 
@@ -32,10 +31,10 @@ var (
 )
 
 type Mapper struct {
-	plans map[string][]layer4.AssessmentPlan
+	plans map[string][]mapper.AssessmentPlan
 }
 
-func (m *Mapper) AddEvaluationPlan(catalogId string, plans ...layer4.AssessmentPlan) {
+func (m *Mapper) AddEvaluationPlan(catalogId string, plans ...mapper.AssessmentPlan) {
 	existingPlans, ok := m.plans[catalogId]
 	if !ok {
 		m.plans[catalogId] = plans
@@ -47,7 +46,7 @@ func (m *Mapper) AddEvaluationPlan(catalogId string, plans ...layer4.AssessmentP
 
 func NewBasicMapper() *Mapper {
 	return &Mapper{
-		plans: make(map[string][]layer4.AssessmentPlan),
+		plans: make(map[string][]mapper.AssessmentPlan),
 	}
 }
 
@@ -138,7 +137,7 @@ func (m *Mapper) Map(policy api.Policy, scope mapper.Scope) api.Compliance {
 }
 
 // buildProceduresMap builds a map of procedure ID to procedure info.
-func (m *Mapper) buildProceduresMap(plans []layer4.AssessmentPlan) map[string]ProcedureInfo {
+func (m *Mapper) buildProceduresMap(plans []mapper.AssessmentPlan) map[string]ProcedureInfo {
 	proceduresById := make(map[string]ProcedureInfo)
 
 	for _, plan := range plans {
@@ -157,15 +156,18 @@ func (m *Mapper) buildProceduresMap(plans []layer4.AssessmentPlan) map[string]Pr
 }
 
 // buildControlDataMap builds a map of control ID to control data.
-func (m *Mapper) buildControlDataMap(catalog layer2.Catalog) map[string]ControlData {
+func (m *Mapper) buildControlDataMap(catalog gemara.ControlCatalog) map[string]ControlData {
 	controlData := make(map[string]ControlData)
 
-	for _, family := range catalog.ControlFamilies {
-		for _, control := range family.Controls {
-			controlData[control.Id] = ControlData{
-				Mappings: control.GuidelineMappings,
-				Category: family.Title,
-			}
+	groupTitles := make(map[string]string)
+	for _, group := range catalog.Groups {
+		groupTitles[group.Id] = group.Title
+	}
+
+	for _, control := range catalog.Controls {
+		controlData[control.Id] = ControlData{
+			Mappings: control.Guidelines,
+			Category: groupTitles[control.Group],
 		}
 	}
 
@@ -173,7 +175,7 @@ func (m *Mapper) buildControlDataMap(catalog layer2.Catalog) map[string]ControlD
 }
 
 // extractRequirements extracts requirement IDs from mappings.
-func (m *Mapper) extractRequirements(mappings []layer2.Mapping) []string {
+func (m *Mapper) extractRequirements(mappings []gemara.MultiEntryMapping) []string {
 	var requirements []string
 	for _, mapping := range mappings {
 		for _, entry := range mapping.Entries {
@@ -184,7 +186,7 @@ func (m *Mapper) extractRequirements(mappings []layer2.Mapping) []string {
 }
 
 // extractStandards extracts standard IDs from mappings.
-func (m *Mapper) extractStandards(mappings []layer2.Mapping) []string {
+func (m *Mapper) extractStandards(mappings []gemara.MultiEntryMapping) []string {
 	var standards []string
 	for _, mapping := range mappings {
 		standards = append(standards, mapping.ReferenceId)

@@ -3,8 +3,7 @@ package basic
 import (
 	"testing"
 
-	"github.com/ossf/gemara/layer2"
-	"github.com/ossf/gemara/layer4"
+	gemara "github.com/gemaraproj/go-gemara"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/complytime/gemara-content-service/api"
@@ -43,13 +42,13 @@ func TestBasicMapper_MapWithPlans(t *testing.T) {
 			basicMapper := NewBasicMapper()
 
 			// Add a test plan
-			plans := []layer4.AssessmentPlan{
+			plans := []mapper.AssessmentPlan{
 				{
-					Control: layer4.Mapping{EntryId: "AC-1", ReferenceId: "test-catalog"},
-					Assessments: []layer4.Assessment{
+					Control: mapper.PlanMapping{EntryId: "AC-1", ReferenceId: "test-catalog"},
+					Assessments: []mapper.Assessment{
 						{
-							Requirement: layer4.Mapping{EntryId: "AC-1-REQ", ReferenceId: "test-catalog"},
-							Procedures: []layer4.AssessmentProcedure{
+							Requirement: mapper.PlanMapping{EntryId: "AC-1-REQ", ReferenceId: "test-catalog"},
+							Procedures: []mapper.AssessmentProcedure{
 								{
 									Id:            "AC-1",
 									Documentation: "Test procedure",
@@ -62,21 +61,23 @@ func TestBasicMapper_MapWithPlans(t *testing.T) {
 			basicMapper.AddEvaluationPlan("test-catalog", plans...)
 
 			// Create a test catalog
-			catalog := layer2.Catalog{
-				Metadata: layer2.Metadata{Id: "test-catalog"},
-				ControlFamilies: []layer2.ControlFamily{
+			catalog := gemara.ControlCatalog{
+				Metadata: gemara.Metadata{Id: "test-catalog"},
+				Groups: []gemara.Group{
 					{
+						Id:    "access-control",
 						Title: "Access Control",
-						Controls: []layer2.Control{
+					},
+				},
+				Controls: []gemara.Control{
+					{
+						Id:    "AC-1",
+						Group: "access-control",
+						Guidelines: []gemara.MultiEntryMapping{
 							{
-								Id: "AC-1",
-								GuidelineMappings: []layer2.Mapping{
-									{
-										ReferenceId: "NIST-800-53",
-										Entries: []layer2.MappingEntry{
-											{ReferenceId: "AC-1"},
-										},
-									},
+								ReferenceId: "NIST-800-53",
+								Entries: []gemara.ArtifactMapping{
+									{ReferenceId: "AC-1"},
 								},
 							},
 						},
@@ -136,8 +137,8 @@ func TestBasicMapper_MapUnmapped(t *testing.T) {
 func TestBasicMapper_AddEvaluationPlan(t *testing.T) {
 	t.Run("adds evaluation plan", func(t *testing.T) {
 		basicMapper := NewBasicMapper()
-		plans := []layer4.AssessmentPlan{
-			{Control: layer4.Mapping{ReferenceId: "AC-1"}},
+		plans := []mapper.AssessmentPlan{
+			{Control: mapper.PlanMapping{ReferenceId: "AC-1"}},
 		}
 
 		basicMapper.AddEvaluationPlan("test-catalog", plans...)
@@ -150,11 +151,11 @@ func TestBasicMapper_AddEvaluationPlan(t *testing.T) {
 
 	t.Run("appends to existing evaluation plans", func(t *testing.T) {
 		basicMapper := NewBasicMapper()
-		initialPlans := []layer4.AssessmentPlan{
-			{Control: layer4.Mapping{ReferenceId: "AC-1"}},
+		initialPlans := []mapper.AssessmentPlan{
+			{Control: mapper.PlanMapping{ReferenceId: "AC-1"}},
 		}
-		additionalPlans := []layer4.AssessmentPlan{
-			{Control: layer4.Mapping{ReferenceId: "AC-2"}},
+		additionalPlans := []mapper.AssessmentPlan{
+			{Control: mapper.PlanMapping{ReferenceId: "AC-2"}},
 		}
 
 		basicMapper.AddEvaluationPlan("test-catalog", initialPlans...)

@@ -4,15 +4,14 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/complytime/gemara-content-service/mapper/plugins/basic"
+	gemara "github.com/gemaraproj/go-gemara"
 	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/ossf/gemara/layer2"
-	"github.com/ossf/gemara/layer4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/complytime/gemara-content-service/api"
 	"github.com/complytime/gemara-content-service/mapper"
+	"github.com/complytime/gemara-content-service/mapper/plugins/basic"
 )
 
 func TestNewService(t *testing.T) {
@@ -34,13 +33,13 @@ func TestEnrich(t *testing.T) {
 
 		// Set up a mapper with plans and catalog for successful mapping
 		mapperPlugin := basic.NewBasicMapper()
-		plans := []layer4.AssessmentPlan{
+		plans := []mapper.AssessmentPlan{
 			{
-				Control: layer4.Mapping{EntryId: "AC-1", ReferenceId: "test-catalog"},
-				Assessments: []layer4.Assessment{
+				Control: mapper.PlanMapping{EntryId: "AC-1", ReferenceId: "test-catalog"},
+				Assessments: []mapper.Assessment{
 					{
-						Requirement: layer4.Mapping{EntryId: "AC-1-REQ", ReferenceId: "test-catalog"},
-						Procedures: []layer4.AssessmentProcedure{
+						Requirement: mapper.PlanMapping{EntryId: "AC-1-REQ", ReferenceId: "test-catalog"},
+						Procedures: []mapper.AssessmentProcedure{
 							{
 								Id:            "AC-1",
 								Documentation: "Test procedure documentation",
@@ -52,21 +51,23 @@ func TestEnrich(t *testing.T) {
 		}
 		mapperPlugin.AddEvaluationPlan("test-catalog", plans...)
 
-		catalog := layer2.Catalog{
-			Metadata: layer2.Metadata{Id: "test-catalog"},
-			ControlFamilies: []layer2.ControlFamily{
+		catalog := gemara.ControlCatalog{
+			Metadata: gemara.Metadata{Id: "test-catalog"},
+			Groups: []gemara.Group{
 				{
+					Id:    "access-control",
 					Title: "Access Control",
-					Controls: []layer2.Control{
+				},
+			},
+			Controls: []gemara.Control{
+				{
+					Id:    "AC-1",
+					Group: "access-control",
+					Guidelines: []gemara.MultiEntryMapping{
 						{
-							Id: "AC-1",
-							GuidelineMappings: []layer2.Mapping{
-								{
-									ReferenceId: "NIST-800-53",
-									Entries: []layer2.MappingEntry{
-										{ReferenceId: "AC-1"},
-									},
-								},
+							ReferenceId: "NIST-800-53",
+							Entries: []gemara.ArtifactMapping{
+								{ReferenceId: "AC-1"},
 							},
 						},
 					},

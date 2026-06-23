@@ -1,8 +1,7 @@
 package mapper
 
 import (
-	"github.com/ossf/gemara/layer2"
-	"github.com/ossf/gemara/layer4"
+	gemara "github.com/gemaraproj/go-gemara"
 
 	"github.com/complytime/gemara-content-service/api"
 )
@@ -12,7 +11,7 @@ import (
 type Mapper interface {
 	PluginName() ID
 	Map(policy api.Policy, scope Scope) api.Compliance
-	AddEvaluationPlan(catalogId string, plans ...layer4.AssessmentPlan)
+	AddEvaluationPlan(catalogId string, plans ...AssessmentPlan)
 }
 
 // ID represents the identity for a transformer.
@@ -28,4 +27,4 @@ type Set map[ID]Mapper
 
 // Scope defined in scope Layer2 Catalogs by the
 // catalog ID
-type Scope map[string]layer2.Catalog
+type Scope map[string]gemara.ControlCatalog

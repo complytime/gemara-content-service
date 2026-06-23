@@ -8,9 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
+	gemara "github.com/gemaraproj/go-gemara"
 	"github.com/goccy/go-yaml"
-	"github.com/ossf/gemara/layer2"
-	"github.com/ossf/gemara/layer4"
 
 	"github.com/complytime/gemara-content-service/mapper"
 	"github.com/complytime/gemara-content-service/mapper/factory"
@@ -25,18 +24,18 @@ func NewScopeFromCatalogPath(catalogPath string) (mapper.Scope, error) {
 		return nil, err
 	}
 
-	var layer2Catalog layer2.Catalog
-	err = yaml.Unmarshal(catalogData, &layer2Catalog)
+	var catalog gemara.ControlCatalog
+	err = yaml.Unmarshal(catalogData, &catalog)
 	if err != nil {
 		return nil, err
 	}
 
 	slog.Debug("catalog loaded",
-		slog.String("catalog_id", layer2Catalog.Metadata.Id),
+		slog.String("catalog_id", catalog.Metadata.Id),
 	)
 
 	return mapper.Scope{
-		layer2Catalog.Metadata.Id: layer2Catalog,
+		catalog.Metadata.Id: catalog,
 	}, nil
 }
 
@@ -122,7 +121,7 @@ func NewMapperFromDir(pluginID mapper.ID, evaluationsPath string) (mapper.Mapper
 			return err
 		}
 
-		var evaluation layer4.EvaluationPlan
+		var evaluation mapper.EvaluationPlan
 		err = yaml.Unmarshal(content, &evaluation)
 		if err != nil {
 			return err

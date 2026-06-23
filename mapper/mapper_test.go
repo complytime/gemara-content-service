@@ -3,8 +3,7 @@ package mapper
 import (
 	"testing"
 
-	"github.com/ossf/gemara/layer2"
-	"github.com/ossf/gemara/layer4"
+	gemara "github.com/gemaraproj/go-gemara"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/complytime/gemara-content-service/api"
@@ -13,7 +12,7 @@ import (
 // mockMapper is a test implementation of the Mapper interface
 type mockMapper struct {
 	id    ID
-	plans map[string][]layer4.AssessmentPlan
+	plans map[string][]AssessmentPlan
 }
 
 func (m *mockMapper) PluginName() ID {
@@ -35,9 +34,9 @@ func (m *mockMapper) Map(policy api.Policy, scope Scope) api.Compliance {
 	}
 }
 
-func (m *mockMapper) AddEvaluationPlan(catalogId string, plans ...layer4.AssessmentPlan) {
+func (m *mockMapper) AddEvaluationPlan(catalogId string, plans ...AssessmentPlan) {
 	if m.plans == nil {
-		m.plans = make(map[string][]layer4.AssessmentPlan)
+		m.plans = make(map[string][]AssessmentPlan)
 	}
 	m.plans[catalogId] = plans
 }
@@ -104,8 +103,8 @@ func TestSet(t *testing.T) {
 func TestScope(t *testing.T) {
 	scope := make(Scope)
 
-	catalog1 := layer2.Catalog{Metadata: layer2.Metadata{Id: "catalog-1"}}
-	catalog2 := layer2.Catalog{Metadata: layer2.Metadata{Id: "catalog-2"}}
+	catalog1 := gemara.ControlCatalog{Metadata: gemara.Metadata{Id: "catalog-1"}}
+	catalog2 := gemara.ControlCatalog{Metadata: gemara.Metadata{Id: "catalog-2"}}
 
 	// Add catalogs
 	scope["catalog-1"] = catalog1
@@ -158,8 +157,8 @@ func TestMapperInterfaceAndIDType(t *testing.T) {
 		assert.Equal(t, "test-catalog", compliance.Control.CatalogId)
 		assert.Equal(t, "AC-1", compliance.Control.Id)
 
-		plans := []layer4.AssessmentPlan{
-			{Control: layer4.Mapping{ReferenceId: "AC-1"}},
+		plans := []AssessmentPlan{
+			{Control: PlanMapping{ReferenceId: "AC-1"}},
 		}
 		mapper.AddEvaluationPlan("test-catalog", plans...)
 		assert.Len(t, mapper.plans, 1)
