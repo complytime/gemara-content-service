@@ -1,5 +1,7 @@
 # Gemara Content Service
 
+> **This repository has been archived.** This was an experimental project under the [complytime](https://github.com/complytime) organization. The experiment was not pursued further, so the repository has been moved to [complytime-labs](https://github.com/complytime-labs) and archived. No further changes will be made here.
+
 An OCI-compliant content delivery and enrichment service for [Gemara](https://github.com/ossf/gemara) compliance artifacts. Clients can discover and download Gemara content (L1 guidance, L2 catalogs, L3 policies) as OCI artifacts using standard tooling.
 
 ## Features
